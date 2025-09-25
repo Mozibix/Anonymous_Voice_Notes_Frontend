@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Anonymous Voice Notes — Record & Download</title>
+    <style>
+      :root {
+        --bg: #0b1220;
+        --card: #0f1724;
+        --accent: #06b6d4;
+        --muted: #9aa8b2;
+        --success: #10b981;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        font-family: Inter, system-ui, Arial, sans-serif;
+        background: linear-gradient(180deg, var(--bg), #07101a 120%);
+        color: #e6eef2;
+      }
+      .wrap {
+        max-width: 880px;
+        margin: 32px auto;
+        padding: 20px;
+      }
+      .card {
+        background: linear-gradient(180deg, var(--card), #07101a);
+        padding: 18px;
+        border-radius: 12px;
+        box-shadow: 0 6px 30px rgba(2, 6, 23, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.03);
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 20px;
+      }
+      p.lead {
+        color: var(--muted);
+        margin: 0 0 18px;
+      }
+      .controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      button {
+        background: linear-gradient(180deg, var(--accent), #0b93a0);
+        border: none;
+        color: #021018;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        color: var(--muted);
+        font-weight: 600;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .audio-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .panel {
+        background: rgba(255, 255, 255, 0.02);
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+      }
+      .meta {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+      a.dl {
+        display: inline-block;
+        margin-left: 8px;
+        background: var(--success);
+        color: #022;
+        padding: 6px 10px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 700;
+      }
+      .small {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .select {
+        padding: 8px;
+        border-radius: 8px;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        color: var(--muted);
+      }
+      footer {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 13px;
+        text-align: center;
+      }
+      @media (max-width: 720px) {
+        .audio-grid {
+          grid-template-columns: 1fr;
+        }
+        .controls {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1>🎙️ Anonymous Voice Notes</h1>
+        <p class="lead">
+          Record a voice note, preview the original and a modified (anonymized)
+          version, then download either. Processing happens locally in your
+          browser.
+        </p>
+
+        <div
+          style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap"
+        >
+          <div>
+            <label class="small">Effect</label><br />
+            <select id="effectSelect" class="select">
+              <option value="random">Random disguise</option>
+              <option value="chipmunk">Chipmunk (higher pitch)</option>
+              <option value="deep">Deep voice (lower pitch)</option>
+              <option value="robot">Robot / metallic</option>
+              <option value="echo">Echo / space</option>
+              <option value="none">Minimal (light EQ)</option>
+            </select>
+          </div>
+
+          <div style="margin-left: auto" class="controls">
+            <button id="startBtn">Start Recording</button>
+            <button id="stopBtn" disabled class="secondary">Stop</button>
+            <button id="clearBtn" class="secondary" disabled>Clear</button>
+          </div>
+        </div>
+
+        <div class="audio-grid">
+          <div class="panel" id="origPanel">
+            <strong>Original</strong>
+            <div class="meta small" id="origMeta">No recording yet</div>
+            <audio
+              id="origAudio"
+              controls
+              style="width: 100%; margin-top: 12px"
+            ></audio>
+            <div style="margin-top: 10px">
+              <a
+                id="downloadOrig"
+                class="dl"
+                href="#"
+                download="original.webm"
+                style="display: none"
+                >Download Original</a
+              >
+            </div>
+          </div>
+
+          <div class="panel" id="modPanel">
+            <strong>Modified (Anonymized)</strong>
+            <div class="meta small" id="modMeta">No processed audio yet</div>
+            <audio
+              id="modAudio"
+              controls
+              style="width: 100%; margin-top: 12px"
+            ></audio>
+            <div style="margin-top: 10px">
+              <a
+                id="downloadMod"
+                class="dl"
+                href="#"
+                download="modified.wav"
+                style="display: none"
+                >Download Modified</a
+              >
+            </div>
+          </div>
+        </div>
+
+        <div
+          style="
+            margin-top: 14px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+          "
+        >
+          <div class="small">
+            Files processed entirely in your browser for privacy.
+          </div>
+          <button id="uploadBtn" class="secondary" disabled>
+            📤 Send Anonymously
+          </button>
+        </div>
+      </div>
+
+      <footer>
+        <div>
+          Tip: use headphones for better results. Mobile recording supported
+          (Chrome Android).
+        </div>
+        <div style="margin-top: 6px">created by <strong>Dark9T🧑‍💻</strong></div>
+      </footer>
+    </div>
+
+    <script>
+      (async function () {
+        const startBtn = document.getElementById("startBtn");
+        const stopBtn = document.getElementById("stopBtn");
+        const clearBtn = document.getElementById("clearBtn");
+        const effectSelect = document.getElementById("effectSelect");
+
+        const origAudio = document.getElementById("origAudio");
+        const modAudio = document.getElementById("modAudio");
+        const downloadOrig = document.getElementById("downloadOrig");
+        const downloadMod = document.getElementById("downloadMod");
+        const origMeta = document.getElementById("origMeta");
+        const modMeta = document.getElementById("modMeta");
+        const uploadBtn = document.getElementById("uploadBtn");
+
+        let mediaRecorder = null;
+        let stream = null;
+        let recordedChunks = [];
+        let currentModifiedBlob = null; // Store the modified audio blob
+
+        const API_BASE =
+          "https://mozibix-anonymous-voice-notes-backe.vercel.app/api";
+
+        function formatDuration(sec) {
+          if (!isFinite(sec)) return "--:--";
+          const s = Math.floor(sec % 60)
+            .toString()
+            .padStart(2, "0");
+          const m = Math.floor(sec / 60)
+            .toString()
+            .padStart(2, "0");
+          return `${m}:${s}`;
+        }
+
+        function revokeAll() {
+          [origAudio.src, modAudio.src].forEach((u) => {
+            if (u) {
+              try {
+                URL.revokeObjectURL(u);
+              } catch (e) {}
+            }
+          });
+          origAudio.src = "";
+          modAudio.src = "";
+          downloadOrig.style.display = "none";
+          downloadMod.style.display = "none";
+        }
+
+        startBtn.addEventListener("click", async () => {
+          revokeAll();
+          recordedChunks = [];
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          } catch (err) {
+            alert("Microphone access denied or not available.");
+            return;
+          }
+
+          // record raw stream using MediaRecorder (webm/opus)
+          const options = {};
+          if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+            options.mimeType = "audio/webm;codecs=opus";
+          } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+            options.mimeType = "audio/webm";
+          }
+          mediaRecorder = new MediaRecorder(stream, options);
+
+          mediaRecorder.ondataavailable = (ev) => {
+            if (ev.data && ev.data.size > 0) recordedChunks.push(ev.data);
+          };
+
+          mediaRecorder.onstop = async () => {
+            const origBlob = new Blob(recordedChunks, {
+              type: recordedChunks[0]?.type || "audio/webm",
+            });
+            const origUrl = URL.createObjectURL(origBlob);
+            origAudio.src = origUrl;
+            downloadOrig.href = origUrl;
+            downloadOrig.style.display = "";
+            // read duration
+            origAudio.onloadedmetadata = () => {
+              origMeta.textContent = `Length: ${formatDuration(
+                origAudio.duration
+              )} — ${Math.round(origBlob.size / 1024)} KB`;
+            };
+
+            // produce anonymized audio (WAV) from the recorded blob
+            try {
+              modMeta.textContent = "Processing...";
+              const modBlob = await produceModifiedFromBlob(
+                origBlob,
+                effectSelect.value
+              );
+              currentModifiedBlob = modBlob; // Store for upload
+              const modUrl = URL.createObjectURL(modBlob);
+              modAudio.src = modUrl;
+              downloadMod.href = modUrl;
+              downloadMod.style.display = "";
+              // Enable upload button
+              uploadBtn.style.display = "";
+              uploadBtn.disabled = false;
+
+              // set metadata
+              const tmp = document.createElement("audio");
+              tmp.src = modUrl;
+              tmp.onloadedmetadata = () => {
+                modMeta.textContent = `Length: ${formatDuration(
+                  tmp.duration
+                )} — ${Math.round(modBlob.size / 1024)} KB`;
+                try {
+                  tmp.remove();
+                } catch (e) {}
+              };
+            } catch (e) {
+              console.error(e);
+              modMeta.textContent =
+                "Processing failed: " + (e && e.message ? e.message : e);
+              uploadBtn.style.display = "none";
+            }
+            clearBtn.disabled = false;
+          };
+
+          mediaRecorder.start();
+          startBtn.disabled = true;
+          stopBtn.disabled = false;
+          clearBtn.disabled = true;
+          origMeta.textContent = "Recording…";
+          modMeta.textContent = "Waiting for processing...";
+        });
+
+        stopBtn.addEventListener("click", () => {
+          if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+          }
+          // stop tracks
+          if (stream) {
+            stream.getTracks().forEach((t) => t.stop());
+          }
+          startBtn.disabled = false;
+          stopBtn.disabled = true;
+        });
+
+        clearBtn.addEventListener("click", () => {
+          revokeAll();
+          currentModifiedBlob = null;
+          origMeta.textContent = "Cleared";
+          modMeta.textContent = "Cleared";
+          clearBtn.disabled = true;
+          uploadBtn.style.display = "none";
+          uploadBtn.disabled = true;
+        });
+
+        // Upload anonymously to backend
+        uploadBtn.addEventListener("click", async () => {
+          if (!currentModifiedBlob) {
+            alert("No processed audio to upload");
+            return;
+          }
+
+          try {
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = "📤 Sending...";
+
+            const formData = new FormData();
+            formData.append(
+              "audio",
+              currentModifiedBlob,
+              "anonymous-voice.wav"
+            );
+            formData.append("effect", effectSelect.value);
+            formData.append("userAgent", navigator.userAgent);
+
+            const response = await fetch(`${API_BASE}/upload-voice`, {
+              method: "POST",
+              body: formData,
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              uploadBtn.textContent = "✅ Sent Successfully!";
+              uploadBtn.style.background = "var(--success)";
+              uploadBtn.style.color = "#fff";
+              setTimeout(() => {
+                uploadBtn.style.display = "none";
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = "📤 Send Anonymously";
+                uploadBtn.style.background = "";
+              }, 3000);
+            } else {
+              throw new Error(result.error || "Upload failed");
+            }
+          } catch (error) {
+            console.error("Upload error:", error);
+            uploadBtn.textContent = "❌ Upload Failed";
+            uploadBtn.disabled = false;
+            alert("Failed to upload: " + error.message);
+            setTimeout(() => {
+              uploadBtn.textContent = "📤 Send Anonymously";
+            }, 3000);
+          }
+        });
+
+        // core: decode original, run offline processing graph, export WAV Blob
+        async function produceModifiedFromBlob(origBlob, effectKey) {
+          // decode
+          const arrayBuffer = await origBlob.arrayBuffer();
+          const ac = new (window.AudioContext || window.webkitAudioContext)();
+          const decoded = await ac.decodeAudioData(arrayBuffer);
+
+          // choose parameters based on effectKey
+          let rate = 1.0;
+          let distortAmount = 0;
+          let reverbSec = 0.05;
+          let filterFreq = 1000;
+          let filterType = "peaking";
+          let filterGain = 0;
+          let delayTime = 0.02;
+          let delayFeedback = 0;
+          let gainAmount = 1.2;
+
+          switch (effectKey) {
+            case "chipmunk":
+              rate = 1.4;
+              filterType = "highpass";
+              filterFreq = 300;
+              reverbSec = 0.03;
+              gainAmount = 1.3;
+              break;
+            case "deep":
+              rate = 0.75;
+              filterType = "lowpass";
+              filterFreq = 3000;
+              filterGain = 3;
+              reverbSec = 0.08;
+              gainAmount = 1.4;
+              break;
+            case "robot":
+              rate = 1.0;
+              distortAmount = 40;
+              filterType = "bandpass";
+              filterFreq = 800;
+              filterGain = 10;
+              reverbSec = 0.1;
+              gainAmount = 1.1;
+              break;
+            case "echo":
+              rate = 1.0;
+              delayTime = 0.2;
+              delayFeedback = 0.4;
+              reverbSec = 0.25;
+              filterType = "highpass";
+              filterFreq = 200;
+              gainAmount = 1.2;
+              break;
+            case "none":
+              rate = 1.0;
+              filterType = "peaking";
+              filterFreq = 2000;
+              filterGain = 2;
+              reverbSec = 0.01;
+              gainAmount = 1.3;
+              break;
+            default: // random disguise
+              rate = 0.8 + Math.random() * 0.6;
+              distortAmount = Math.random() > 0.7 ? 20 + Math.random() * 30 : 0;
+              reverbSec = 0.05 + Math.random() * 0.2;
+              filterFreq = 300 + Math.random() * 2000;
+              filterType = Math.random() > 0.5 ? "peaking" : "bandpass";
+              filterGain = Math.random() * 8 - 4;
+              delayTime = 0.02 + Math.random() * 0.1;
+              delayFeedback = Math.random() * 0.3;
+              gainAmount = 1.0 + Math.random() * 0.4;
+          }
+
+          // create offline context with length adjusted by rate
+          const outLength = Math.ceil(decoded.length / rate);
+          const offline = new OfflineAudioContext(
+            decoded.numberOfChannels,
+            outLength,
+            decoded.sampleRate
+          );
+
+          const src = offline.createBufferSource();
+          src.buffer = decoded;
+          src.playbackRate.value = rate;
+
+          // Create processing chain
+          let currentNode = src;
+
+          // Primary filter
+          const filter = offline.createBiquadFilter();
+          filter.type = filterType;
+          filter.frequency.value = filterFreq;
+          if (
+            filterType === "peaking" ||
+            filterType === "lowshelf" ||
+            filterType === "highshelf"
+          ) {
+            filter.gain.value = filterGain;
+          }
+          filter.Q.value = 2;
+
+          currentNode.connect(filter);
+          currentNode = filter;
+
+          // Distortion (if enabled)
+          if (distortAmount > 0) {
+            const shaper = offline.createWaveShaper();
+            shaper.curve = makeDistortionCurve(distortAmount);
+            shaper.oversample = "2x";
+
+            currentNode.connect(shaper);
+            currentNode = shaper;
+          }
+
+          // Delay (if enabled)
+          if (delayTime > 0.05 || delayFeedback > 0) {
+            const delay = offline.createDelay(1.0);
+            delay.delayTime.value = delayTime;
+
+            const delayGain = offline.createGain();
+            delayGain.gain.value = delayFeedback;
+
+            const wetGain = offline.createGain();
+            wetGain.gain.value = 0.5;
+
+            const dryGain = offline.createGain();
+            dryGain.gain.value = 0.7;
+
+            // Create delay feedback loop
+            currentNode.connect(dryGain);
+            currentNode.connect(delay);
+            delay.connect(wetGain);
+            delay.connect(delayGain);
+            delayGain.connect(delay);
+
+            // Mix dry and wet
+            const mixer = offline.createGain();
+            mixer.gain.value = 1.0;
+            dryGain.connect(mixer);
+            wetGain.connect(mixer);
+
+            currentNode = mixer;
+          }
+
+          // Reverb
+          if (reverbSec > 0.01) {
+            const convolver = offline.createConvolver();
+            convolver.buffer = makeIR(offline, reverbSec);
+
+            currentNode.connect(convolver);
+            currentNode = convolver;
+          }
+
+          // Final gain and slight filtering
+          const finalFilter = offline.createBiquadFilter();
+          finalFilter.type = "lowpass";
+          finalFilter.frequency.value = 8000;
+
+          const finalGain = offline.createGain();
+          finalGain.gain.value = gainAmount;
+
+          // Additional volume boost
+          const volumeBoost = offline.createGain();
+          volumeBoost.gain.value = 2.5; // Significant volume increase
+
+          currentNode.connect(finalFilter);
+          finalFilter.connect(finalGain);
+          finalGain.connect(volumeBoost);
+          volumeBoost.connect(offline.destination);
+
+          src.start(0);
+          const rendered = await offline.startRendering();
+
+          // convert buffer to WAV Blob
+          const wav = bufferToWav(rendered);
+          return wav;
+        }
+
+        // create small impulse response buffer for reverb
+        function makeIR(offline, seconds = 0.2) {
+          const rate = offline.sampleRate;
+          const length = Math.floor(rate * seconds);
+          const ir = offline.createBuffer(2, length, rate);
+          for (let ch = 0; ch < 2; ch++) {
+            const data = ir.getChannelData(ch);
+            for (let i = 0; i < length; i++) {
+              // decaying noise with some early reflections
+              const decay = Math.pow(1 - i / length, 1.5);
+              const early = i < length * 0.1 ? Math.sin(i * 0.01) * 0.3 : 0;
+              data[i] = (Math.random() * 2 - 1) * decay + early * decay;
+            }
+          }
+          return ir;
+        }
+
+        // distortion curve helper
+        function makeDistortionCurve(amount) {
+          const n = 44100;
+          const curve = new Float32Array(n);
+          if (!amount || amount <= 0) return curve;
+
+          const k = amount;
+          for (let i = 0; i < n; i++) {
+            const x = (i * 2) / n - 1;
+            // More aggressive distortion curve
+            curve[i] =
+              (Math.sign(x) * (1 - Math.exp(-Math.abs(x) * k))) /
+              (1 - Math.exp(-k));
+          }
+          return curve;
+        }
+
+        // Convert AudioBuffer -> WAV Blob (16-bit PCM)
+        function bufferToWav(abuffer) {
+          const numChannels = abuffer.numberOfChannels;
+          const sampleRate = abuffer.sampleRate;
+          const length = abuffer.length * numChannels * 2 + 44;
+          const buffer = new ArrayBuffer(length);
+          const view = new DataView(buffer);
+          /* RIFF identifier */
+          writeString(view, 0, "RIFF");
+          view.setUint32(4, 36 + abuffer.length * numChannels * 2, true);
+          writeString(view, 8, "WAVE");
+          writeString(view, 12, "fmt ");
+          view.setUint32(16, 16, true); // PCM chunk size
+          view.setUint16(20, 1, true); // PCM format
+          view.setUint16(22, numChannels, true);
+          view.setUint32(24, sampleRate, true);
+          view.setUint32(28, sampleRate * numChannels * 2, true);
+          view.setUint16(32, numChannels * 2, true);
+          view.setUint16(34, 16, true);
+          writeString(view, 36, "data");
+          view.setUint32(40, abuffer.length * numChannels * 2, true);
+          // write interleaved PCM samples
+          let offset = 44;
+          for (let i = 0; i < abuffer.length; i++) {
+            for (let ch = 0; ch < numChannels; ch++) {
+              let sample = abuffer.getChannelData(ch)[i];
+              // clamp
+              sample = Math.max(-1, Math.min(1, sample));
+              view.setInt16(
+                offset,
+                sample < 0 ? sample * 0x8000 : sample * 0x7fff,
+                true
+              );
+              offset += 2;
+            }
+          }
+          return new Blob([view], { type: "audio/wav" });
+        }
+
+        function writeString(view, offset, str) {
+          for (let i = 0; i < str.length; i++) {
+            view.setUint8(offset + i, str.charCodeAt(i));
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>
